@@ -1,0 +1,5 @@
+## Package for PyPI
+```
+python3 -m build --wheel .
+python3 -m twine upload --repository testpypi dist/*
+```
