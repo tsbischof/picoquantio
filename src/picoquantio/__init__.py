@@ -1,10 +1,11 @@
 import mmap
 import pathlib
+from typing import Union
 
 VERSION = "0.0.1"
 
 
-def identify(path: pathlib.Path | str) -> tuple[str, str, str]:
+def identify(path: Union[pathlib.Path, str]) -> tuple[str, str, str]:
     """
     Return a tuple of (hardware, format, version) describing the kind of file
 
@@ -19,7 +20,7 @@ def identify(path: pathlib.Path | str) -> tuple[str, str, str]:
         return identify_by_header(mmap.mmap(rawdata.fileno(), 0))
 
 
-def identify_by_header(rawdata: mmap.mmap | bytes) -> tuple[str, str, str]:
+def identify_by_header(rawdata: Union[mmap.mmap, bytes]) -> tuple[str, str, str]:
     raise NotImplementedError
 
 
