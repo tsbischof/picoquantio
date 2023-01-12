@@ -5,6 +5,8 @@
 [![Downloads](https://static.pepy.tech/personalized-badge/picoquantio?period=month&units=international_system&left_color=black&right_color=orange&left_text=PyPI%20downloads%20per%20month)](https://pepy.tech/project/picoquantio)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
+See also [libpicoquant](https://github.com/tsbischof/libpicoquant) for the C equivalent.
+
 ## Main features
 * read data from phu, ptu, hhd, ht2, ht3, phd, pt2, pt3, thd, t3r formats
 * automatic file type detection

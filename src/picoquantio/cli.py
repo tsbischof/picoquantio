@@ -9,7 +9,9 @@ def main():
         "--file-in",
         "-i",
         type=str,
-        help="Read data from this file. The type will be determined automatically",
+        help="""Read data from this file. The type will be determined automatically, unless otherwise specified with --hardware. 
+
+If this option is not used, data will be read from stdin""",
     )
     parser.add_argument("--file-out", "-o", type=str, help="Write data to this file.")
     parser.add_argument(
