@@ -12,7 +12,7 @@ def load_cor(path: Union[pathlib.Path, str]) -> Tuple[Dict[str, str], pd.DataFra
     Read data from a PicoQuant .cor file.
 
     This format consists of a metadata header, a blank line, then a
-    whitespace-delimited data header followed by a data array.::
+    whitespace-delimited data header followed by a data array::
 
        TTTR Correlator Export
        PicoHarp Software version 3.0.0.3 format version 3.0

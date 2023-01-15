@@ -1,7 +1,7 @@
 import collections
 import io
 import pathlib
-import typing
+from typing import Any, Union
 
 from .cor import load_cor
 from . import hydraharp
@@ -13,9 +13,17 @@ from . import unified
 VERSION = "0.0.1-dev"
 
 Identity = collections.namedtuple("Identity", ["Identity", "Version"])
+Path = Union[pathlib.Path, str]
 
 
-def identify(path: typing.Union[pathlib.Path, str]) -> Identity:
+def _sanitize_path(path: Path):
+    if isinstance(path, str):
+        return pathlib.Path(path)
+    else:
+        return path
+
+
+def identify(path: Path) -> Identity:
     """
     Return a tuple of (hardware, format, version) describing the kind of file
 
@@ -59,11 +67,25 @@ def _identify_by_header(rawdata: io.BufferedReader) -> Identity:
     return Identity(ident.rstrip(b"\x00").decode(), version.rstrip(b"\x00").decode())
 
 
-def load(path: pathlib.Path):
+def load(path: Path) -> Any:
+    """
+    Load PicoQuant data from a file, with the file type detected automatically
+
+
+    :param path: path to the file
+
+    """
+    path = _sanitize_path(path)
     identity = identify(path)
-    decoder = _get_decoder(identity)
-    return decoder(path)
+    loader = get_loader(identity)
+    return loader(path)
 
 
-def _get_decoder(identity: Identity):
+def get_loader(identity: Identity) -> Any:
+    """
+    Returns the loader for the given file format, or raises an exception
+
+    :param identity: the Identity tuple containing the hardware identity and version
+    :return: a function which loads data from a given path
+    """
     raise NotImplementedError
