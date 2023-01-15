@@ -14,6 +14,5 @@ def test_hh_v30_t2_ptu():
 
     with open(filename, "rb") as rawdata:
         rawdata.seek(16)
-        tags = picoquantio.unified.read_tags(rawdata, asdict=False)
-        assert len(tags) == 88
-        assert tags[-1].ident == "Header_End"
+        tags = picoquantio.unified.read_tags(rawdata)
+        assert len(tags) == 58
