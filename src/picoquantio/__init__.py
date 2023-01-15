@@ -20,7 +20,7 @@ def identify(path: typing.Union[pathlib.Path, str]) -> Identity:
 
     :param path: Path to the file
     :return: (hardware, format, version)
-    :rtype: {Identity}
+    :rtype: Identity
     """
     if isinstance(path, str):
         path = pathlib.Path(path)
@@ -35,7 +35,7 @@ def _identify_by_header(rawdata: io.BufferedReader) -> Identity:
 
     :param rawdata: mmap or bytes of raw data, starting from the beggining of the file
     :return: (hardware, format, version)
-    :rtype: {Identity}
+    :rtype: Identity
     """
     VALID_IDENTS = {
         b"PQHIST",

@@ -13,6 +13,7 @@ Welcome to picoquantio's documentation!
    :caption: Contents:
 
    usage
+   api
    development
 
 Indices and tables
