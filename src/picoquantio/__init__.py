@@ -5,8 +5,7 @@ from typing import Any, Union
 
 from .cor import load_cor
 from . import hydraharp
-
-# from . import picoharp
+from . import picoharp
 from . import timeharp
 from . import unified
 
