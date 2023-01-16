@@ -1,18 +1,59 @@
 import collections
 import io
+import json
 import mmap
 import struct
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 import warnings
 
 import numpy as np
 
-from .constants import *
+import picoquantio
 
 UnifiedTag = collections.namedtuple("UnifiedTag", ["ident", "index", "type", "value"])
 UnifiedTagStruct = struct.Struct("<32siI8s")
 TagDict = Dict[str, Union[Any, List[Any]]]
+
+_pu_tag = {
+    "Empty8": 0xFFFF0008,
+    "Bool8": 0x00000008,
+    "Int8": 0x10000008,
+    "BitSet64": 0x11000008,
+    "Color8": 0x12000008,
+    "Float8": 0x20000008,
+    "TDateTime": 0x21000008,
+    "Float8Array": 0x2001FFFF,
+    "AnsiString": 0x4001FFFF,
+    "WideString": 0x4002FFFF,
+    "BinaryBlob": 0xFFFFFFFF,
+}
+
+_pu_record_type = {
+    "PH_T3": 0x00010303,
+    "PH_T2": 0x00010203,
+    "HH_V1_T3": 0x00010304,
+    "HH_V1_T2": 0x00010204,
+    "HH_V2_T3": 0x01010304,
+    "HH_V2_T2": 0x01010204,
+    "TH_260_NT3": 0x00010305,
+    "TH_260_NT2": 0x00010205,
+    "TH_260_PT3": 0x00010306,
+    "TH_260_PT2": 0x00010206,
+}
+
+
+def read_magic(rawdata: io.BufferedReader) -> picoquantio.Identity:
+    """
+    Read the magic bytes from a ptu or phu file, and advance the buffer.
+
+    :param rawdata: an io.BufferedReader of the raw data
+    :return: identity of the data
+    """
+    ident, version = struct.unpack("8s8s", rawdata.read(16))
+    return picoquantio.Identity(
+        ident.rstrip(b"\x00").decode(), version.rstrip(b"\x00").decode()
+    )
 
 
 def read_tags(rawdata: io.BufferedReader) -> TagDict:
@@ -43,38 +84,38 @@ def read_tags_to_list(rawdata: io.BufferedReader) -> List[UnifiedTag]:
                 rawdata.read(UnifiedTagStruct.size)
             )
             ident = ident.rstrip(b"\x00").decode("utf-8")
-            if _type == PU_TAG_Empty8:
+            if _type == _pu_tag["Empty8"]:
                 value = None
-            elif _type == PU_TAG_Bool8:
+            elif _type == _pu_tag["Bool8"]:
                 value = bool(struct.unpack("<q", value)[0])
-            elif _type == PU_TAG_Int8:
+            elif _type == _pu_tag["Int8"]:
                 (value,) = struct.unpack("<q", value)
-            elif _type == PU_TAG_BitSet64:
+            elif _type == _pu_tag["BitSet64"]:
                 (value,) = struct.unpack("<q", value)
-            elif _type == PU_TAG_Color8:
+            elif _type == _pu_tag["Color8"]:
                 (value,) = struct.unpack("<q", value)
-            elif _type == PU_TAG_Float8:
+            elif _type == _pu_tag["Float8"]:
                 (value,) = struct.unpack("<d", value)
-            elif _type == PU_TAG_TDateTime:
+            elif _type == _pu_tag["TDateTime"]:
                 (float_value,) = struct.unpack("<d", value)
                 value = time.gmtime(int((float(float_value) - 25569) * 86400))
-            elif _type == PU_TAG_Float8Array:
+            elif _type == _pu_tag["Float8Array"]:
                 value = rawdata.read(struct.calcsize(f"{value}d"))
-            elif _type == PU_TAG_AnsiString:
+            elif _type == _pu_tag["AnsiString"]:
                 (size,) = struct.unpack("<q", value)
                 value = (
                     rawdata.read(struct.calcsize(f"{size}c"))
                     .rstrip(b"\x00")
                     .decode("utf-8")
                 )
-            elif _type == PU_TAG_WideString:
+            elif _type == _pu_tag["WideString"]:
                 (size,) = struct.unpack("<q", value)
                 value = (
                     rawdata.read(struct.calcsize(f"{size}c"))
                     .rstrip(b"\x00")
                     .decode("utf-16")
                 )
-            elif _type == PU_TAG_BinaryBlob:
+            elif _type == _pu_tag["BinaryBlob"]:
                 value = rawdata.read(value)
             else:
                 raise ValueError(
@@ -125,3 +166,35 @@ def _tag_list_to_dict(tags: List[UnifiedTag]) -> TagDict:
                     )
 
     return result
+
+
+def load_ptu(
+    path: picoquantio.Path,
+) -> Tuple[picoquantio.Header, picoquantio.Records]:
+    """
+    Load data from the given ptu file
+
+    :param path: path to the ptu file
+    :return: headers and data
+    """
+    path = picoquantio._sanitize_path(path)
+    with path.open("rb") as rawdata:
+        identity = read_magic(rawdata)
+        tags = read_tags(rawdata)
+        tags["magic"] = identity
+        hardware = tags["HW_Type"]
+        version = tags["HW_Version"]
+        mode = tags["Measurement_Mode"]
+
+        if hardware == "HydraHarp 400":
+            loader = picoquantio.hydraharp._get_record_loader(version, mode)
+        elif hardware == "PicoHarp 300":
+            loader = picoquantio.picoharp._get_record_loader(version, mode)
+        elif hardware == "TimeHarp 200":
+            loader = picoquantio.timeharp._get_record_loader(version, mode)
+        else:
+            raise ValueError(
+                f"Cannot identify hardware with HW_Type={hardware}, HW_Version={version}, Measurement_Mode={mode}"
+            )
+
+        return tags, loader(rawdata)

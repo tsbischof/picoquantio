@@ -43,6 +43,7 @@ $ picoquant --file-in data.ht3
 
 ## Dependencies
 * numpy
+* pandas
 
 ## License
 [BSD 3-clause](https://github.com/tsbischof/picoquantio/LICENSE)
